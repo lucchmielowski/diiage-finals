@@ -2,6 +2,10 @@
 global:
   namespace: monitoring
 
+# Enable/disable components
+opentelemetry-operator:
+  enabled: true
+
 # Prometheus configuration
 prometheus:
   enabled: true
@@ -347,3 +351,5 @@ instrumentation:
     name: traffic-generator-instrumentation
     namespace: prod
     serviceName: traffic-generator
+
+
