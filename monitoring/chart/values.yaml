@@ -250,6 +250,150 @@ grafana:
   
   dashboards:
     default:
+      otel-collector:
+        json: |
+          {
+            "title": "OpenTelemetry Collector",
+            "tags": ["opentelemetry", "collector"],
+            "timezone": "browser",
+            "schemaVersion": 38,
+            "version": 0,
+            "refresh": "10s",
+            "time": {
+              "from": "now-1h",
+              "to": "now"
+            },
+            "panels": [
+              {
+                "id": 1,
+                "title": "Spans Received",
+                "type": "timeseries",
+                "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+                "datasource": {"type": "prometheus", "uid": "Prometheus"},
+                "targets": [
+                  {
+                    "expr": "rate(otelcol_receiver_accepted_spans[5m])",
+                    "legendFormat": "{{receiver}}",
+                    "refId": "A"
+                  }
+                ]
+              },
+              {
+                "id": 2,
+                "title": "Metrics Received",
+                "type": "timeseries",
+                "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
+                "datasource": {"type": "prometheus", "uid": "Prometheus"},
+                "targets": [
+                  {
+                    "expr": "rate(otelcol_receiver_accepted_metric_points[5m])",
+                    "legendFormat": "{{receiver}}",
+                    "refId": "A"
+                  }
+                ]
+              },
+              {
+                "id": 3,
+                "title": "Spans Exported",
+                "type": "timeseries",
+                "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8},
+                "datasource": {"type": "prometheus", "uid": "Prometheus"},
+                "targets": [
+                  {
+                    "expr": "rate(otelcol_exporter_sent_spans[5m])",
+                    "legendFormat": "{{exporter}}",
+                    "refId": "A"
+                  }
+                ]
+              },
+              {
+                "id": 4,
+                "title": "Metrics Exported",
+                "type": "timeseries",
+                "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8},
+                "datasource": {"type": "prometheus", "uid": "Prometheus"},
+                "targets": [
+                  {
+                    "expr": "rate(otelcol_exporter_sent_metric_points[5m])",
+                    "legendFormat": "{{exporter}}",
+                    "refId": "A"
+                  }
+                ]
+              }
+            ]
+          }
+      backend:
+        json: |
+          {
+            "title": "Backend Application",
+            "tags": ["backend", "application"],
+            "timezone": "browser",
+            "schemaVersion": 38,
+            "version": 0,
+            "refresh": "10s",
+            "time": {
+              "from": "now-1h",
+              "to": "now"
+            },
+            "panels": [
+              {
+                "id": 1,
+                "title": "HTTP Requests Total",
+                "type": "timeseries",
+                "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+                "datasource": {"type": "prometheus", "uid": "Prometheus"},
+                "targets": [
+                  {
+                    "expr": "sum(rate(http_requests_total[5m])) by (path, status)",
+                    "legendFormat": "{{path}} - {{status}}",
+                    "refId": "A"
+                  }
+                ]
+              },
+              {
+                "id": 2,
+                "title": "ConfigMap Reads",
+                "type": "timeseries",
+                "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
+                "datasource": {"type": "prometheus", "uid": "Prometheus"},
+                "targets": [
+                  {
+                    "expr": "rate(configmap_read_total[5m])",
+                    "legendFormat": "ConfigMap Reads",
+                    "refId": "A"
+                  }
+                ]
+              },
+              {
+                "id": 3,
+                "title": "HTTP Requests by Status",
+                "type": "piechart",
+                "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8},
+                "datasource": {"type": "prometheus", "uid": "Prometheus"},
+                "targets": [
+                  {
+                    "expr": "sum(rate(http_requests_total[5m])) by (status)",
+                    "legendFormat": "{{status}}",
+                    "refId": "A"
+                  }
+                ]
+              },
+              {
+                "id": 4,
+                "title": "HTTP Requests by Path",
+                "type": "piechart",
+                "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8},
+                "datasource": {"type": "prometheus", "uid": "Prometheus"},
+                "targets": [
+                  {
+                    "expr": "sum(rate(http_requests_total[5m])) by (path)",
+                    "legendFormat": "{{path}}",
+                    "refId": "A"
+                  }
+                ]
+              }
+            ]
+          }
       tempo:
         gcom:
           - id: 15141
