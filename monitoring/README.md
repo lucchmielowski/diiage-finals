@@ -4,12 +4,13 @@ Stack de monitoring pour surveiller l'application backend, basée sur Prometheus
 
 ## Composants
 
-- **cert-manager** : Gestion des certificats TLS (requis pour OpenTelemetry Operator)
 - **OpenTelemetry Operator** : Opérateur Kubernetes pour gérer les ressources OpenTelemetry (Instrumentation, OpenTelemetryCollector CRD)
 - **OpenTelemetry Collector** : Collecte et route la télémétrie (traces, métriques, logs)
 - **Tempo** : Backend de traces distribuées
 - **Prometheus** : Collecte et stocke les métriques
 - **Grafana** : Visualisation des métriques et traces
+
+**Note** : cert-manager est requis pour OpenTelemetry Operator mais est géré séparément via GitOps (`gitops/applicationsets/cert-manager-app.yaml`).
 
 ## Installation
 
@@ -20,12 +21,13 @@ Pour installer la stack de monitoring :
 ```
 
 Le script installera automatiquement via Helm :
-1. cert-manager (requis pour OpenTelemetry Operator)
-2. OpenTelemetry Operator
-3. OpenTelemetry Collector
-4. Tempo (tracing backend)
-5. Prometheus (metrics backend)
-6. Grafana (visualization)
+1. OpenTelemetry Operator
+2. OpenTelemetry Collector
+3. Tempo (tracing backend)
+4. Prometheus (metrics backend)
+5. Grafana (visualization)
+
+**Prérequis** : cert-manager doit être installé séparément (via GitOps ou manuellement) avant d'installer la stack de monitoring.
 
 ### Installation via Helm directement
 
@@ -40,9 +42,11 @@ helm install monitoring-stack . --namespace monitoring --create-namespace
 ## Structure
 
 Le dossier `chart/` contient un chart Helm unifié qui agrège tous les composants comme dépendances :
-- `Chart.yaml` : Définit les dépendances (cert-manager, OpenTelemetry Operator, Prometheus, Grafana, Tempo, OpenTelemetry Collector)
+- `Chart.yaml` : Définit les dépendances (OpenTelemetry Operator, Prometheus, Grafana, Tempo, OpenTelemetry Collector)
 - `values.yaml` : Configuration unifiée pour tous les composants
 - `templates/` : Templates pour les ressources OpenTelemetry (Instrumentation, OpenTelemetryCollector CRD) et le namespace
+
+**Note** : cert-manager est géré séparément via GitOps et n'est pas inclus dans ce chart.
 
 ## Accès à Grafana
 
@@ -61,13 +65,14 @@ Puis ouvrir http://localhost:3000
 ## Configuration
 
 Toute la configuration Helm se trouve dans `chart/values.yaml` qui contient les sections :
-- `cert-manager:` : Configuration cert-manager (activé par défaut)
 - `opentelemetry-operator:` : Configuration OpenTelemetry Operator (activé par défaut)
 - `prometheus:` : Configuration Prometheus
 - `grafana:` : Configuration Grafana avec datasources pré-configurés
 - `tempo:` : Configuration Tempo
 - `opentelemetry-collector:` : Configuration du collector
 - `instrumentation:` : Configuration des ressources Instrumentation pour l'auto-instrumentation
+
+**Note** : cert-manager est configuré séparément via `gitops/applicationsets/cert-manager-app.yaml`.
 
 ## Déploiement via GitOps
 
