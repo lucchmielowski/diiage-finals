@@ -12,7 +12,7 @@ opentelemetry-operator:
         enabled: true
     autoInstrumentationImage:
       go:
-        repository: docker pull ghcr.io/open-telemetry/opentelemetry-go-instrumentation/autoinstrumentation-go
+        repository: ghcr.io/open-telemetry/opentelemetry-go-instrumentation/autoinstrumentation-go
         tag: v0.23.0
 
 # OpenTelemetry Collector CRD (managed by operator)
@@ -150,8 +150,33 @@ tempo:
 loki:
   enabled: true
   
+  # Use single binary mode (monolithic) - no object storage required
+  singleBinary:
+    replicas: 1
+  
+  # Disable distributed components (backend, read, write)
+  backend:
+    replicas: 0
+  read:
+    replicas: 0
+  write:
+    replicas: 0
+  
+  # Disable cache (memcached) - not needed for single binary mode
+  memcached:
+    enabled: true
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
+  
   loki:
     auth_enabled: false
+
+    resources: {}
     
     commonConfig:
       replication_factor: 1
@@ -159,7 +184,8 @@ loki:
     storage:
       type: filesystem
       filesystem:
-        directory: /loki/chunks
+        chunks_directory: /loki/chunks
+        rules_directory: /loki/rules
     
     schemaConfig:
       configs:
@@ -201,7 +227,7 @@ promtail:
   
   config:
     clients:
-      - url: http://monitoring-stack-loki:3100/loki/api/v1/push
+      - url: http://monitoring-stack-loki-gateway/loki/api/v1/push
   
   # Promtail runs as DaemonSet to collect logs from all nodes
   # It automatically collects logs from /var/log/pods on each node
@@ -304,7 +330,7 @@ grafana:
             serviceMap:
               datasourceUid: Prometheus
             tracesToLogs:
-              datasourceUid: Prometheus
+              datasourceUid: Loki
               tags: ['job', 'instance', 'pod', 'namespace']
               mappedTags: [{ key: 'service.name', value: 'service' }]
               mapTagNamesEnabled: false
@@ -314,6 +340,21 @@ grafana:
               filterBySpanID: false
               customQuery: true
               query: 'method="$${__span.tags.method}"'
+        
+        - name: Loki
+          type: loki
+          access: proxy
+          url: http://monitoring-stack-loki-gateway:80
+          uid: Loki
+          isDefault: false
+          editable: true
+          jsonData:
+            maxLines: 1000
+            derivedFields:
+              - datasourceUid: Tempo
+                matcherRegex: "trace_id=(\\w+)"
+                name: TraceID
+                url: '$${__value.raw}'
   
   dashboardProviders:
     dashboardproviders.yaml:
