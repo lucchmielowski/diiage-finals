@@ -3,6 +3,9 @@ global:
   namespace: monitoring
 
 # Enable/disable components
+cert-manager:
+  enabled: true
+
 opentelemetry-operator:
   enabled: true
 
