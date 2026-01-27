@@ -69,26 +69,27 @@ prometheus:
     
     emptyDir:
       sizeLimit: ""
-    
-    serverFiles:
-      prometheus.yml:
-        scrape_configs:
-          - job_name: 'otel-collector'
-            static_configs:
-              - targets: ['monitoring-collector.monitoring.svc.cluster.local:8888']
-          
-          - job_name: 'backend'
-            kubernetes_sd_configs:
-              - role: pod
-            relabel_configs:
-              - source_labels: [__meta_kubernetes_pod_label_app]
-                regex: diiage-finals-app.*backend
-                action: keep
-              - source_labels: [__meta_kubernetes_pod_ip]
-                target_label: __address__
-                action: replace
-                regex: '(.+)'
-                replacement: '$$1:8080'
+  
+  # Prometheus 28: serverFiles is top-level (sibling of server)
+  serverFiles:
+    prometheus.yml:
+      scrape_configs:
+        - job_name: 'otel-collector'
+          static_configs:
+            - targets: ['monitoring-collector.monitoring.svc.cluster.local:8888']
+        
+        - job_name: 'backend'
+          kubernetes_sd_configs:
+            - role: pod
+          relabel_configs:
+            - source_labels: [__meta_kubernetes_pod_label_app]
+              regex: diiage-finals-app.*backend
+              action: keep
+            - source_labels: [__meta_kubernetes_pod_ip]
+              target_label: __address__
+              action: replace
+              regex: '(.+)'
+              replacement: '$$1:8080'
   
   persistence:
     enabled: false
@@ -146,15 +147,19 @@ tempo:
     fsGroup: 10001
     runAsNonRoot: true
 
-# Loki configuration
+# Loki configuration (chart 6.51)
 loki:
   enabled: true
+  deploymentMode: SingleBinary
   
-  # Use single binary mode (monolithic) - no object storage required
   singleBinary:
     replicas: 1
+    persistence:
+      enabled: true
+      size: 10Gi
+      accessModes:
+        - ReadWriteOnce
   
-  # Disable distributed components (backend, read, write)
   backend:
     replicas: 0
   read:
@@ -162,31 +167,19 @@ loki:
   write:
     replicas: 0
   
-  # Disable cache (memcached) - not needed for single binary mode
   memcached:
-    enabled: true
-    resources:
-      requests:
-        cpu: 50m
-        memory: 64Mi
-      limits:
-        cpu: 100m
-        memory: 128Mi
+    enabled: false
   
   loki:
     auth_enabled: false
-
     resources: {}
-    
     commonConfig:
       replication_factor: 1
-    
     storage:
       type: filesystem
       filesystem:
-        chunks_directory: /loki/chunks
-        rules_directory: /loki/rules
-    
+        chunks_directory: /var/loki/chunks
+        rules_directory: /var/loki/rules
     schemaConfig:
       configs:
         - from: "2024-01-01"
@@ -196,9 +189,8 @@ loki:
           index:
             prefix: index_
             period: 24h
-    
-    limits:
-      retention_period: 1h  # 
+    limits_config:
+      retention_period: 1h
       ingestion_rate_mb: 16
       ingestion_burst_size_mb: 32
   

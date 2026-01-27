@@ -19,6 +19,16 @@ backend:
   config:
     appName: "shop-backend"
     logLevel: "info"
+    # Name of the ConfigMap to fetch in the /config endpoint
+    configmapName: "app-config"
+    # Create a ConfigMap in the chart for the app to read via /config
+    createConfigMap: true
+    configmapData:
+      feature_x: "enabled"
+      feature_y: "disabled"
+      debug_mode: "false"
+      api_timeout_seconds: "30"
+      cache_ttl: "3600"
 
 instrumentation:
   enabled: true
@@ -37,5 +47,10 @@ serviceAccount:
 rbac:
   # Specifies whether RBAC resources should be created
   create: true
-  # Rules to apply for the Role
-  rules: []
+  # Rules to apply for the Role (namespace-scoped; e.g. ConfigMap read for /config)
+  rules:
+    - apiGroups: [""]
+      resources: ["configmaps"]
+      verbs: ["get", "list"]
+  # Allow listing pods cluster-wide for /pods (uses ClusterRole + ClusterRoleBinding)
+  clusterRolePods: true
