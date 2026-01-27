@@ -1,0 +1,29 @@
+{{- if .Values.instrumentation.enabled }}
+apiVersion: opentelemetry.io/v1alpha1
+kind: Instrumentation
+metadata:
+  name: {{ include "traffic-gen.fullname" . }}-instrumentation
+  namespace: {{ .Release.Namespace }}
+spec:
+  exporter:
+    endpoint: {{ .Values.instrumentation.exporterEndpoint | default "monitoring-stack-opentelemetry-collector.monitoring.svc.cluster.local:4317" }}
+  
+  propagators:
+    - tracecontext
+    - baggage
+    - b3
+  
+  sampler:
+    type: parentbased_traceidratio
+    argument: "1"
+  
+  env:
+    - name: OTEL_SERVICE_NAME
+      value: {{ .Values.instrumentation.serviceName | default "traffic-generator" | quote }}
+    - name: OTEL_EXPORTER_OTLP_ENDPOINT
+      value: {{ .Values.instrumentation.exporterEndpoint | default "http://monitoring-stack-opentelemetry-collector.monitoring.svc.cluster.local:4317" | quote }}
+    - name: OTEL_EXPORTER_OTLP_PROTOCOL
+      value: "grpc"
+    - name: OTEL_RESOURCE_ATTRIBUTES
+      value: "service.name={{ .Values.instrumentation.serviceName | default "traffic-generator" }},service.namespace={{ .Release.Namespace }}"
+{{- end }}

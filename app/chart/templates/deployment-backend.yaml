@@ -16,7 +16,7 @@ spec:
         {{- include "diiage-finals-app.labels" . | nindent 8 }}
       annotations:
         {{- if .Values.instrumentation.enabled }}
-        instrumentation.opentelemetry.io/inject-go: "prod/default-instrumentation"
+        instrumentation.opentelemetry.io/inject-go: "{{ .Release.Namespace }}/{{ include "diiage-finals-app.fullname" . }}-instrumentation"
         {{- end }}
     spec:
       containers:
