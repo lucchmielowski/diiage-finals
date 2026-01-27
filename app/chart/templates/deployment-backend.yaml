@@ -20,6 +20,9 @@ spec:
         instrumentation.opentelemetry.io/otel-go-auto-target-exe: '/root/backend'
         {{- end }}
     spec:
+      {{- if .Values.serviceAccount.create }}
+      serviceAccountName: {{ include "diiage-finals-app.fullname" . }}-backend
+      {{- end }}
       containers:
         - name: backend
           image: "{{ .Values.image.backend.repository }}:{{ .Values.image.backend.tag }}"
