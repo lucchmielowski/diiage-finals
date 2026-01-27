@@ -76,7 +76,7 @@ prometheus:
       scrape_configs:
         - job_name: 'otel-collector'
           static_configs:
-            - targets: ['monitoring-collector.monitoring.svc.cluster.local:8888']
+            - targets: ['monitoring-collector-collector-monitoring.monitoring.svc.cluster.local:8888']
         
         - job_name: 'backend'
           kubernetes_sd_configs:
@@ -89,7 +89,7 @@ prometheus:
               target_label: __address__
               action: replace
               regex: '(.+)'
-              replacement: '$$1:8080'
+              replacement: '$1:8080'
   
   persistence:
     enabled: false
@@ -146,92 +146,6 @@ tempo:
     runAsGroup: 10001
     fsGroup: 10001
     runAsNonRoot: true
-
-# Loki configuration (chart 6.51)
-loki:
-  enabled: true
-  deploymentMode: SingleBinary
-  
-  singleBinary:
-    replicas: 1
-    persistence:
-      enabled: true
-      size: 10Gi
-      accessModes:
-        - ReadWriteOnce
-  
-  backend:
-    replicas: 0
-  read:
-    replicas: 0
-  write:
-    replicas: 0
-  
-  memcached:
-    enabled: false
-  
-  loki:
-    auth_enabled: false
-    resources: {}
-    commonConfig:
-      replication_factor: 1
-    storage:
-      type: filesystem
-      filesystem:
-        chunks_directory: /var/loki/chunks
-        rules_directory: /var/loki/rules
-    schemaConfig:
-      configs:
-        - from: "2024-01-01"
-          store: tsdb
-          object_store: filesystem
-          schema: v13
-          index:
-            prefix: index_
-            period: 24h
-    limits_config:
-      retention_period: 1h
-      ingestion_rate_mb: 16
-      ingestion_burst_size_mb: 32
-  
-  persistence:
-    enabled: true
-    size: 10Gi
-    storageClassName: ""
-    accessModes:
-      - ReadWriteOnce
-  
-  resources:
-    requests:
-      cpu: 100m
-      memory: 256Mi
-    limits:
-      cpu: 500m
-      memory: 512Mi
-  
-  service:
-    type: ClusterIP
-    port: 3100
-
-# Promtail configuration
-promtail:
-  enabled: true
-  
-  config:
-    clients:
-      - url: http://monitoring-stack-loki-gateway/loki/api/v1/push
-  
-  # Promtail runs as DaemonSet to collect logs from all nodes
-  # It automatically collects logs from /var/log/pods on each node
-  # The default configuration already handles Kubernetes pod logs
-  
-  resources:
-    requests:
-      cpu: 50m
-      memory: 128Mi
-    limits:
-      cpu: 200m
-      memory: 256Mi
 
 # Grafana configuration
 grafana:
@@ -291,17 +205,6 @@ grafana:
           editable: true
           jsonData:
             httpMethod: GET
-            tracesToLogs:
-              datasourceUid: Loki
-              tags: ['job', 'instance', 'pod', 'namespace']
-              mappedTags: [{ key: 'service.name', value: 'service' }]
-              mapTagNamesEnabled: false
-              spanStartTimeShift: '1h'
-              spanEndTimeShift: '1h'
-              filterByTraceID: false
-              filterBySpanID: false
-              customQuery: true
-              query: 'method="$${__span.tags.method}"'
             serviceMap:
               datasourceUid: Prometheus
             nodeGraph:
@@ -321,32 +224,6 @@ grafana:
               enabled: true
             serviceMap:
               datasourceUid: Prometheus
-            tracesToLogs:
-              datasourceUid: Loki
-              tags: ['job', 'instance', 'pod', 'namespace']
-              mappedTags: [{ key: 'service.name', value: 'service' }]
-              mapTagNamesEnabled: false
-              spanStartTimeShift: '1h'
-              spanEndTimeShift: '1h'
-              filterByTraceID: false
-              filterBySpanID: false
-              customQuery: true
-              query: 'method="$${__span.tags.method}"'
-        
-        - name: Loki
-          type: loki
-          access: proxy
-          url: http://monitoring-stack-loki-gateway:80
-          uid: Loki
-          isDefault: false
-          editable: true
-          jsonData:
-            maxLines: 1000
-            derivedFields:
-              - datasourceUid: Tempo
-                matcherRegex: "trace_id=(\\w+)"
-                name: TraceID
-                url: '$${__value.raw}'
   
   dashboardProviders:
     dashboardproviders.yaml:

@@ -34,5 +34,5 @@ backend:
 instrumentation:
   enabled: true
   serviceName: backend
-  exporterEndpoint: http://monitoring-collector.monitoring.svc.cluster.local:4317
+  exporterEndpoint: http://monitoring-collector-collector.monitoring.svc.cluster.local:4317
 

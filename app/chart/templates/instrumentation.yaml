@@ -6,7 +6,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   exporter:
-    endpoint: {{ .Values.instrumentation.exporterEndpoint | default "monitoring-collector.monitoring.svc.cluster.local:4317" }}
+    endpoint: {{ .Values.instrumentation.exporterEndpoint }}
   
   propagators:
     - tracecontext
@@ -21,7 +21,7 @@ spec:
     - name: OTEL_SERVICE_NAME
       value: {{ .Values.instrumentation.serviceName | default "backend" | quote }}
     - name: OTEL_EXPORTER_OTLP_ENDPOINT
-      value: {{ .Values.instrumentation.exporterEndpoint | default "http://monitoring-collector.monitoring.svc.cluster.local:4317" | quote }}
+      value: {{ .Values.instrumentation.exporterEndpoint | quote }}
     - name: OTEL_EXPORTER_OTLP_PROTOCOL
       value: "grpc"
     - name: OTEL_RESOURCE_ATTRIBUTES
