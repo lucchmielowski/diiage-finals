@@ -158,7 +158,12 @@ grafana:
     port: 80
   
   persistence:
-    enabled: false
+    enabled: true
+    type: pvc
+    accessModes:
+      - ReadWriteOnce
+    size: 10Gi
+    annotations: {}
   
   resources:
     requests:
@@ -177,63 +182,69 @@ grafana:
       anonymous:
         enabled: true
         org_role: Viewer
-    
-    datasources:
-      datasources.yaml:
-        apiVersion: 1
-        datasources:
-          - name: Prometheus
-            type: prometheus
-            access: proxy
-            url: http://monitoring-stack-prometheus-server:80
-            isDefault: true
-            editable: true
-          
-          - name: Tempo
-            type: tempo
-            access: proxy
-            url: http://monitoring-stack-tempo:3200
-            isDefault: false
-            editable: true
-            jsonData:
-              httpMethod: GET
-              tracesToLogs:
-                datasourceUid: Prometheus
-                tags: ['job', 'instance', 'pod', 'namespace']
-                mappedTags: [{ key: 'service.name', value: 'service' }]
-                mapTagNamesEnabled: false
-                spanStartTimeShift: '1h'
-                spanEndTimeShift: '1h'
-                filterByTraceID: false
-                filterBySpanID: false
-                customQuery: true
-                query: 'method="$${__span.tags.method}"'
-          
-          - name: Tempo (Search)
-            type: tempo
-            access: proxy
-            url: http://monitoring-stack-tempo:3200
-            isDefault: false
-            editable: true
-            jsonData:
-              httpMethod: GET
-              search:
-                hide: false
-              nodeGraph:
-                enabled: true
-              serviceMap:
-                datasourceUid: Prometheus
-              tracesToLogs:
-                datasourceUid: Prometheus
-                tags: ['job', 'instance', 'pod', 'namespace']
-                mappedTags: [{ key: 'service.name', value: 'service' }]
-                mapTagNamesEnabled: false
-                spanStartTimeShift: '1h'
-                spanEndTimeShift: '1h'
-                filterByTraceID: false
-                filterBySpanID: false
-                customQuery: true
-                query: 'method="$${__span.tags.method}"'
+  
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+        - name: Prometheus
+          type: prometheus
+          access: proxy
+          url: http://monitoring-stack-prometheus-server:80
+          isDefault: true
+          editable: true
+          jsonData:
+            timeInterval: 15s
+        
+        - name: Tempo
+          type: tempo
+          access: proxy
+          url: http://monitoring-stack-tempo:3200
+          isDefault: false
+          editable: true
+          jsonData:
+            httpMethod: GET
+            tracesToLogs:
+              datasourceUid: Prometheus
+              tags: ['job', 'instance', 'pod', 'namespace']
+              mappedTags: [{ key: 'service.name', value: 'service' }]
+              mapTagNamesEnabled: false
+              spanStartTimeShift: '1h'
+              spanEndTimeShift: '1h'
+              filterByTraceID: false
+              filterBySpanID: false
+              customQuery: true
+              query: 'method="$${__span.tags.method}"'
+            serviceMap:
+              datasourceUid: Prometheus
+            nodeGraph:
+              enabled: true
+        
+        - name: Tempo (Search)
+          type: tempo
+          access: proxy
+          url: http://monitoring-stack-tempo:3200
+          isDefault: false
+          editable: true
+          jsonData:
+            httpMethod: GET
+            search:
+              hide: false
+            nodeGraph:
+              enabled: true
+            serviceMap:
+              datasourceUid: Prometheus
+            tracesToLogs:
+              datasourceUid: Prometheus
+              tags: ['job', 'instance', 'pod', 'namespace']
+              mappedTags: [{ key: 'service.name', value: 'service' }]
+              mapTagNamesEnabled: false
+              spanStartTimeShift: '1h'
+              spanEndTimeShift: '1h'
+              filterByTraceID: false
+              filterBySpanID: false
+              customQuery: true
+              query: 'method="$${__span.tags.method}"'
   
   dashboardProviders:
     dashboardproviders.yaml:
