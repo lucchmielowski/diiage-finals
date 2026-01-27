@@ -42,9 +42,11 @@ helm install monitoring-stack . --namespace monitoring --create-namespace
 ## Structure
 
 Le dossier `chart/` contient un chart Helm unifié qui agrège tous les composants comme dépendances :
-- `Chart.yaml` : Définit les dépendances (OpenTelemetry Operator, Prometheus, Grafana, Tempo, OpenTelemetry Collector)
+- `Chart.yaml` : Définit les dépendances (OpenTelemetry Operator, Prometheus, Grafana, Tempo)
 - `values.yaml` : Configuration unifiée pour tous les composants
-- `templates/` : Templates pour les ressources OpenTelemetry (Instrumentation, OpenTelemetryCollector CRD) et le namespace
+- `templates/` : Templates pour les ressources OpenTelemetry (OpenTelemetryCollector CRD) et le namespace
+
+**Note** : L'OpenTelemetry Collector est géré via l'OpenTelemetry Operator en utilisant une ressource CRD `OpenTelemetryCollector` (définie dans `templates/opentelemetrycollector.yaml`), et non via le chart Helm `opentelemetry-collector` qui est désactivé.
 
 **Note** : cert-manager est géré séparément via GitOps et n'est pas inclus dans ce chart.
 
@@ -65,12 +67,14 @@ Puis ouvrir http://localhost:3000
 ## Configuration
 
 Toute la configuration Helm se trouve dans `chart/values.yaml` qui contient les sections :
-- `opentelemetry-operator:` : Configuration OpenTelemetry Operator (activé par défaut)
+- `opentelemetry-operator:` : Configuration OpenTelemetry Operator (activé par défaut, avec support Go auto-instrumentation activé)
+- `opentelemetry-collector:` : Chart Helm désactivé (le collector est géré via CRD)
+- `opentelemetryCollector:` : Configuration de la ressource CRD OpenTelemetryCollector (gérée par l'operator)
 - `prometheus:` : Configuration Prometheus
 - `grafana:` : Configuration Grafana avec datasources pré-configurés
 - `tempo:` : Configuration Tempo
-- `opentelemetry-collector:` : Configuration du collector
-- `instrumentation:` : Configuration des ressources Instrumentation pour l'auto-instrumentation
+
+**Note** : Les ressources Instrumentation sont maintenant gérées directement dans chaque chart applicatif (`app/chart/templates/instrumentation.yaml` et `traffic-gen-app/chart/templates/instrumentation.yaml`).
 
 **Note** : cert-manager est configuré séparément via `gitops/applicationsets/cert-manager-app.yaml`.
 
@@ -84,4 +88,4 @@ L'application backend expose déjà des métriques Prometheus sur `/metrics` :
 - `http_requests_total` : Nombre total de requêtes HTTP par chemin et code de statut
 - `configmap_read_total` : Nombre de lectures de ConfigMap
 
-Ces métriques sont automatiquement scrapées par Prometheus via l'OpenTelemetry Collector.
+Ces métriques sont automatiquement scrapées par Prometheus. L'OpenTelemetry Collector (géré via CRD par l'operator) collecte les traces et métriques OTLP des applications instrumentées et les route vers Tempo (traces) et Prometheus (métriques).

@@ -21,11 +21,6 @@ dependencies:
     repository: https://grafana.github.io/helm-charts
     condition: tempo.enabled
   
-  - name: opentelemetry-collector
-    version: 0.95.0
-    repository: https://open-telemetry.github.io/opentelemetry-helm-charts
-    condition: opentelemetry-collector.enabled
-  
   - name: opentelemetry-operator
     version: 0.102.0
     repository: https://open-telemetry.github.io/opentelemetry-helm-charts

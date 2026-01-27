@@ -5,6 +5,31 @@ global:
 # Enable/disable components
 opentelemetry-operator:
   enabled: true
+  # Enable Go auto-instrumentation (required for instrumentation.opentelemetry.io/inject-go)
+  manager:
+    autoInstrumentation:
+      go:
+        enabled: true
+    autoInstrumentationImage:
+      go:
+        repository: docker pull ghcr.io/open-telemetry/opentelemetry-go-instrumentation/autoinstrumentation-go
+        tag: v0.23.0
+
+# OpenTelemetry Collector CRD (managed by operator)
+opentelemetryCollector:
+  enabled: true
+  name: monitoring-collector
+  image: otel/opentelemetry-collector-contrib:latest
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  exporters:
+    tempoEndpoint: monitoring-stack-tempo.monitoring.svc.cluster.local:4317
+    prometheusEndpoint: http://monitoring-stack-prometheus-server.monitoring.svc.cluster.local:80/api/v1/write
 
 # Prometheus configuration
 prometheus:
@@ -50,7 +75,7 @@ prometheus:
         scrape_configs:
           - job_name: 'otel-collector'
             static_configs:
-              - targets: ['monitoring-stack--opentelemetry-collector.monitoring.svc.cluster.local:8888']
+              - targets: ['monitoring-collector.monitoring.svc.cluster.local:8888']
           
           - job_name: 'backend'
             kubernetes_sd_configs:
@@ -64,107 +89,6 @@ prometheus:
                 action: replace
                 regex: '(.+)'
                 replacement: '$$1:8080'
-              - source_labels: [__meta_kubernetes_pod_name]
-                target_label: pod_name
-
-# Grafana configuration
-grafana:
-  enabled: true
-  adminUser: admin
-  adminPassword: admin
-  
-  service:
-    type: ClusterIP
-    port: 3000
-  
-  resources:
-    requests:
-      cpu: 100m
-      memory: 128Mi
-    limits:
-      cpu: 500m
-      memory: 512Mi
-  
-  grafana.ini:
-    auth.anonymous:
-      enabled: true
-      org_role: Admin
-  
-  datasources:
-    datasources.yaml:
-      apiVersion: 1
-      datasources:
-        - name: Prometheus
-          type: prometheus
-          access: proxy
-          url: http://monitoring-stack-prometheus-server.monitoring.svc.cluster.local:80
-          isDefault: true
-          editable: true
-          jsonData:
-            timeInterval: 15s
-        
-        - name: Tempo
-          type: tempo
-          access: proxy
-          url: http://monitoring-stack-tempo.monitoring.svc.cluster.local:3200
-          editable: true
-          jsonData:
-            tracesToLogs:
-              datasourceUid: Loki
-            serviceMap:
-              datasourceUid: Prometheus
-            nodeGraph:
-              enabled: true
-  
-  dashboardProviders:
-    dashboardproviders.yaml:
-      apiVersion: 1
-      providers:
-        - name: 'default'
-          orgId: 1
-          folder: ''
-          type: file
-          disableDeletion: false
-          editable: true
-          options:
-            path: /var/lib/grafana/dashboards/default
-  
-  dashboards:
-    default:
-      backend-metrics:
-        json: |
-          {
-            "title": "Backend Metrics",
-            "tags": ["backend", "prometheus"],
-            "timezone": "browser",
-            "schemaVersion": 16,
-            "version": 0,
-            "refresh": "10s",
-            "panels": [
-              {
-                "title": "HTTP Requests Total",
-                "type": "graph",
-                "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
-                "targets": [
-                  {
-                    "expr": "sum(rate(http_requests_total[5m])) by (path, status)",
-                    "legendFormat": "{{path}} - {{status}}"
-                  }
-                ]
-              },
-              {
-                "title": "ConfigMap Reads",
-                "type": "graph",
-                "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
-                "targets": [
-                  {
-                    "expr": "rate(configmap_read_total[5m])",
-                    "legendFormat": "ConfigMap Reads/sec"
-                  }
-                ]
-              }
-            ]
-          }
   
   persistence:
     enabled: false
@@ -222,121 +146,118 @@ tempo:
     fsGroup: 10001
     runAsNonRoot: true
 
-# OpenTelemetry Collector configuration
-opentelemetry-collector:
+# Grafana configuration
+grafana:
   enabled: true
-  mode: deployment
   
-  image:
-    repository: otel/opentelemetry-collector-contrib
-  
-  resources:
-    limits:
-      cpu: 500m
-      memory: 512Mi
-    requests:
-      cpu: 100m
-      memory: 256Mi
-  
-  replicaCount: 1
-  
-  ports:
-    otlp:
-      enabled: true
-      containerPort: 4317
-      servicePort: 4317
-      protocol: TCP
-    otlp-http:
-      enabled: true
-      containerPort: 4318
-      servicePort: 4318
-      protocol: TCP
-    prometheus:
-      enabled: true
-      containerPort: 8888
-      servicePort: 8888
-      protocol: TCP
-    metrics:
-      enabled: true
-      containerPort: 8889
-      servicePort: 8889
-      protocol: TCP
-  
-  config:
-    receivers:
-      otlp:
-        protocols:
-          grpc:
-            endpoint: 0.0.0.0:4317
-          http:
-            endpoint: 0.0.0.0:4318
-      
-      prometheus:
-        config:
-          scrape_configs:
-            - job_name: 'otel-collector'
-              scrape_interval: 10s
-              static_configs:
-                - targets: ['localhost:8888']
-    
-    processors:
-      batch:
-        timeout: 10s
-        send_batch_size: 1024
-      
-      memory_limiter:
-        check_interval: 1s
-        limit_mib: 512
-        spike_limit_mib: 128
-    
-    exporters:
-      otlp/tempo:
-        endpoint: monitoring-stack-tempo.monitoring.svc.cluster.local:4317
-        tls:
-          insecure: true
-
-      prometheusremotewrite:
-        endpoint: http://monitoring-stack-prometheus-server.monitoring.svc.cluster.local:80/api/v1/write
-        tls:
-          insecure: true
-      
-      debug:
-        verbosity: detailed
-    
-    service:
-      pipelines:
-        traces:
-          receivers: [otlp]
-          processors: [memory_limiter, batch]
-          exporters: [otlp/tempo, debug]
-        
-        metrics:
-          receivers: [otlp, prometheus]
-          processors: [memory_limiter, batch]
-          exporters: [prometheusremotewrite, debug]
-        
-        logs:
-          receivers: [otlp]
-          processors: [memory_limiter, batch]
-          exporters: [debug]
+  adminUser: admin
+  adminPassword: admin
   
   service:
     type: ClusterIP
-
-opentelemetryCollector:
-  enabled: true 
-  name: monitoring-collector
-  image: otel/opentelemetry-collector-contrib:latest
+    port: 80
+  
+  persistence:
+    enabled: false
+  
   resources:
-    limits:
-      cpu: 500m
-      memory: 512Mi
     requests:
       cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 200m
       memory: 256Mi
-  exporters:
-    tempoEndpoint: monitoring-stack-tempo.monitoring.svc.cluster.local:4317
-    prometheusEndpoint: http://monitoring-stack-prometheus-server.monitoring.svc.cluster.local:80/api/v1/write
-
-
-
+  
+  grafana.ini:
+    server:
+      root_url: "%(protocol)s://%(domain)s:%(http_port)s/"
+    
+    auth:
+      disable_login_form: false
+      anonymous:
+        enabled: true
+        org_role: Viewer
+    
+    datasources:
+      datasources.yaml:
+        apiVersion: 1
+        datasources:
+          - name: Prometheus
+            type: prometheus
+            access: proxy
+            url: http://monitoring-stack-prometheus-server:80
+            isDefault: true
+            editable: true
+          
+          - name: Tempo
+            type: tempo
+            access: proxy
+            url: http://monitoring-stack-tempo:3200
+            isDefault: false
+            editable: true
+            jsonData:
+              httpMethod: GET
+              tracesToLogs:
+                datasourceUid: Prometheus
+                tags: ['job', 'instance', 'pod', 'namespace']
+                mappedTags: [{ key: 'service.name', value: 'service' }]
+                mapTagNamesEnabled: false
+                spanStartTimeShift: '1h'
+                spanEndTimeShift: '1h'
+                filterByTraceID: false
+                filterBySpanID: false
+                customQuery: true
+                query: 'method="$${__span.tags.method}"'
+          
+          - name: Tempo (Search)
+            type: tempo
+            access: proxy
+            url: http://monitoring-stack-tempo:3200
+            isDefault: false
+            editable: true
+            jsonData:
+              httpMethod: GET
+              search:
+                hide: false
+              nodeGraph:
+                enabled: true
+              serviceMap:
+                datasourceUid: Prometheus
+              tracesToLogs:
+                datasourceUid: Prometheus
+                tags: ['job', 'instance', 'pod', 'namespace']
+                mappedTags: [{ key: 'service.name', value: 'service' }]
+                mapTagNamesEnabled: false
+                spanStartTimeShift: '1h'
+                spanEndTimeShift: '1h'
+                filterByTraceID: false
+                filterBySpanID: false
+                customQuery: true
+                query: 'method="$${__span.tags.method}"'
+  
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: 'default'
+          orgId: 1
+          folder: ''
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/default
+  
+  dashboards:
+    default:
+      tempo:
+        gcom:
+          - id: 15141
+            revision: 0
+            datasource: Tempo
+          - id: 15139
+            revision: 0
+            datasource: Tempo
+          - id: 15143
+            revision: 0
+            datasource: Tempo

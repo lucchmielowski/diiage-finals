@@ -20,4 +20,4 @@ resources:
 instrumentation:
   enabled: true
   serviceName: traffic-generator
-  exporterEndpoint: http://monitoring-stack-opentelemetry-collector.monitoring.svc.cluster.local:4317
+  exporterEndpoint: http://monitoring-collector.monitoring.svc.cluster.local:4317
