@@ -14,6 +14,10 @@ spec:
       labels:
         app: {{ include "diiage-finals-app.name" . }}-backend
         {{- include "diiage-finals-app.labels" . | nindent 8 }}
+      annotations:
+        {{- if .Values.instrumentation.enabled }}
+        instrumentation.opentelemetry.io/inject-go: "prod/default-instrumentation"
+        {{- end }}
     spec:
       containers:
         - name: backend

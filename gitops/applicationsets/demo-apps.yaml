@@ -29,11 +29,11 @@ spec:
       project: default
       source:
         repoURL: https://github.com/lucchmielowski/diiage-finals.git
-        targetRevision: main
+        targetRevision: teacher
         path: '{{path}}'
         helm:
           valueFiles:
-          - 'https://raw.githubusercontent.com/lucchmielowski/diiage-finals/refs/heads/main/{{valuesFile}}'
+          - 'https://raw.githubusercontent.com/lucchmielowski/diiage-finals/refs/heads/teacher/{{valuesFile}}'
       destination:
         server: https://kubernetes.default.svc
         namespace: '{{namespace}}'

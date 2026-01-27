@@ -318,3 +318,32 @@ opentelemetry-collector:
   
   service:
     type: ClusterIP
+
+opentelemetryCollector:
+  enabled: true 
+  name: monitoring-collector
+  image: otel/opentelemetry-collector-contrib:latest
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  exporters:
+    tempoEndpoint: monitoring-stack-tempo.monitoring.svc.cluster.local:4317
+    prometheusEndpoint: http://monitoring-stack-prometheus-server.monitoring.svc.cluster.local:80/api/v1/write
+
+# Instrumentation resources for auto-instrumentation
+instrumentation:
+  enabled: true
+  name: default-instrumentation
+  namespace: prod
+  exporterEndpoint: http://monitoring-stack-opentelemetry-collector.monitoring.svc.cluster.local:4317
+  serviceName: backend
+  
+  trafficGenerator:
+    enabled: true
+    name: traffic-generator-instrumentation
+    namespace: prod
+    serviceName: traffic-generator

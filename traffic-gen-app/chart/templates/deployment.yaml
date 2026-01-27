@@ -13,6 +13,10 @@ spec:
     metadata:
       labels:
         {{- include "traffic-gen.selectorLabels" . | nindent 8 }}
+      annotations:
+        {{- if .Values.instrumentation.enabled }}
+        instrumentation.opentelemetry.io/inject-go: "prod/traffic-generator-instrumentation"
+        {{- end }}
     spec:
       containers:
         - name: traffic-gen

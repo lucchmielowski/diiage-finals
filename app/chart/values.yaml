@@ -19,3 +19,6 @@ backend:
   config:
     appName: "shop-backend"
     logLevel: "info"
+
+instrumentation:
+  enabled: true

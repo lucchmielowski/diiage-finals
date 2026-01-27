@@ -19,7 +19,7 @@ spec:
       project: default
       source:
         repoURL: https://github.com/lucchmielowski/diiage-finals.git
-        targetRevision: main
+        targetRevision: teacher
         path: '{{path}}'
       destination:
         server: https://kubernetes.default.svc
