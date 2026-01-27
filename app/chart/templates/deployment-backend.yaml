@@ -16,7 +16,8 @@ spec:
         {{- include "diiage-finals-app.labels" . | nindent 8 }}
       annotations:
         {{- if .Values.instrumentation.enabled }}
-        instrumentation.opentelemetry.io/inject-go: "{{ .Release.Namespace }}/{{ include "diiage-finals-app.fullname" . }}-instrumentation"
+        instrumentation.opentelemetry.io/inject-go: "true"
+        instrumentation.opentelemetry.io/otel-go-auto-target-exe: '/root/backend'
         {{- end }}
     spec:
       containers:

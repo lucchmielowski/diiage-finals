@@ -15,7 +15,8 @@ spec:
         {{- include "traffic-gen.selectorLabels" . | nindent 8 }}
       annotations:
         {{- if .Values.instrumentation.enabled }}
-        instrumentation.opentelemetry.io/inject-go: "{{ .Release.Namespace }}/{{ include "traffic-gen.fullname" . }}-instrumentation"
+        instrumentation.opentelemetry.io/inject-go: "true"
+        instrumentation.opentelemetry.io/otel-go-auto-target-exe: '/root/traffic-gen'
         {{- end }}
     spec:
       containers:
