@@ -29,28 +29,3 @@ backend:
       debug_mode: "false"
       api_timeout_seconds: "30"
       cache_ttl: "3600"
-
-instrumentation:
-  enabled: true
-  serviceName: backend
-  exporterEndpoint: http://monitoring-collector-collector.monitoring.svc.cluster.local:4317
-
-serviceAccount:
-  # Specifies whether a service account should be created
-  create: true
-  # Annotations to add to the service account
-  annotations: {}
-  # The name of the service account to use.
-  # If not set and create is true, a name is generated using the fullname template
-  name: ""
-
-rbac:
-  # Specifies whether RBAC resources should be created
-  create: true
-  # Rules to apply for the Role (namespace-scoped; e.g. ConfigMap read for /config)
-  rules:
-    - apiGroups: [""]
-      resources: ["configmaps"]
-      verbs: ["get", "list"]
-  # Allow listing pods cluster-wide for /pods (uses ClusterRole + ClusterRoleBinding)
-  clusterRolePods: true

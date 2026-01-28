@@ -16,8 +16,3 @@ resources:
   requests:
     cpu: 10m
     memory: 32Mi
-
-instrumentation:
-  enabled: true
-  serviceName: traffic-generator
-  exporterEndpoint: http://monitoring-collector-collector.monitoring.svc.cluster.local:4317

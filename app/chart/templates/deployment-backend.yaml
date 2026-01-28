@@ -14,15 +14,7 @@ spec:
       labels:
         app: {{ include "diiage-finals-app.name" . }}-backend
         {{- include "diiage-finals-app.labels" . | nindent 8 }}
-      annotations:
-        {{- if .Values.instrumentation.enabled }}
-        instrumentation.opentelemetry.io/inject-go: {{ include "diiage-finals-app.fullname" . }}-instrumentation
-        instrumentation.opentelemetry.io/otel-go-auto-target-exe: '/root/backend'
-        {{- end }}
     spec:
-      {{- if .Values.serviceAccount.create }}
-      serviceAccountName: {{ include "diiage-finals-app.fullname" . }}-backend
-      {{- end }}
       containers:
         - name: backend
           image: "{{ .Values.image.backend.repository }}:{{ .Values.image.backend.tag }}"
